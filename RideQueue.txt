@@ -1,0 +1,125 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Stack;
+
+import projekt.RideRequest.Status;
+
+public class RideQueue {
+private Queue<RideRequest> requests;
+private Stack<RideRequest> cancelRides;
+
+public Queue<RideRequest> getRequests() {
+	return requests;
+}
+
+public void setRequests(Queue<RideRequest> requests) {
+	this.requests = requests;
+}
+
+public RideQueue() {
+	this.requests=new LinkedList<>();
+}
+
+public void addRequest(RideRequest request) {
+	requests.offer(request);
+	System.out.println("The ride request has been added by: " + request.getCustomer().getName() + " status: " + request.getStatus());
+
+	request.saveRequestsToCSV(); 
+}
+
+public void addCanceledRequests(RideRequest request) {
+	cancelRides.push(request);
+	System.out.println("Ride request made by:" + request.getCustomer().getName() + "has been added to the canceled requests");
+}
+public boolean cancelRequest(RideRequest request) {
+	if(requests.remove(request)) {
+		request.setStatus(Status.CANCELED);
+		System.out.println("The request under the name:"+request.getCustomer().getName()+"has been canceled");
+		return true;
+	}else {
+		System.out.println("Request not found in the queue");
+		return false;
+	}
+}
+
+public boolean cancelRequestById(String requestId) {
+ 
+    RideRequest request = findRideRequestById(requestId);
+    
+    if (request == null) {
+        System.out.println("Request with ID " + requestId + " not found.");
+        return false; 
+    }
+
+   
+    request.setStatus(RideRequest.Status.CANCELED);
+
+    
+    addCanceledRequests( request);
+
+
+    requests.remove(request);
+    System.out.println("Request with ID " + requestId + " has been canceled and removed from the queue.");
+
+    return true; 
+}
+
+
+public void displayPendingRequests() {
+    boolean hasPending = false;
+
+    for (RideRequest request : requests) {
+        if (request.getStatus() == RideRequest.Status.PENDING) {
+            hasPending = true;
+            System.out.println("Customer: " + request.getCustomer().getName());
+            System.out.println("Pickup: " + request.getPickUpLocation());
+            System.out.println("Destination: " + request.getDestination());
+            System.out.println("Price: $" + request.getPrice());
+            System.out.println("Requested at: " + request.getRequestTime());
+            System.out.println("Status: " + request.getStatus()); // Explicitly show status
+            System.out.println("---------------");
+        }
+    }
+
+    if (!hasPending) {
+        System.out.println("No pending requests.");
+    }
+}
+
+public void loadRequestsFromCSV(String filename, StoreDrivers storeDrivers) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            System.out.println("Reading line: " + line);  // Print the line being read
+            
+      
+            RideRequest request = RideRequest.fromCSV(line, storeDrivers);
+            if (request != null) {
+                addRequest(request);              }
+        }
+    } catch (IOException e) {
+        System.out.println("Error loading ride requests from CSV: " + e.getMessage());
+    }
+}
+public RideRequest findRideRequestById(String requestId) {
+    for (RideRequest request : requests) {
+        if (request.getCustomer().getID().equals(requestId)) {
+            return request;
+        }
+    }
+    return null; 
+}
+
+
+public boolean isEmpty() {
+    return requests.isEmpty();
+}
+
+public int getSize() {
+	return requests.size();
+}
+
+}

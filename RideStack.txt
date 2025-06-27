@@ -1,0 +1,60 @@
+import java.util.Stack;
+
+import projekt.RideRequest.Status;
+
+public class RideStack {
+private Stack<RideRequest> cancelRides;
+
+public RideStack() {
+	this.cancelRides=new Stack<>();
+}
+
+public void addCanceledRequests(RideRequest request) {
+	cancelRides.push(request);
+	System.out.println("Ride request made by:" + request.getCustomer().getName() + "has been added to the canceled requests");
+}
+//kur behet remove si request statusi behet:"canceled", duke perdorur funksionin
+//pop ride hiqet dhe behet return elementi i pare, ja pse statusi kthehet ng canceled ne pending
+//dhe si request ai behet restored pra ruhet
+
+public RideRequest removeCanceledRequests() {
+	if(cancelRides.isEmpty()) {
+		System.out.println("No requests to remove");
+		return null;
+	}
+	RideRequest restoreRequest=cancelRides.pop();
+	restoreRequest.setStatus(Status.PENDING);
+	System.out.println("Restored canceled ride for:"+restoreRequest.getCustomer().getName());
+	return restoreRequest;
+}
+public double computeAverageRating() {
+    if (cancelRides.isEmpty()) {
+        System.out.println("No canceled rides available to compute ratings.");
+        return 0.0;
+    }
+    return computeAverageRatingHelper(cancelRides, 0, 0);
+}
+
+private double computeAverageRatingHelper(Stack<RideRequest> stack, int count, double sum) {
+    if (stack.isEmpty()) {
+        return count == 0 ? 0.0 : sum / count; // Avoid division by zero
+    }
+
+    RideRequest request = stack.pop();
+    Driver driver = request.getAssignedDriver();
+    double rating = (driver != null) ? driver.getRating() : 0; // Handle null driver case
+
+    double result = computeAverageRatingHelper(stack, count + 1, sum + rating);
+    stack.push(request); // Restore stack state
+
+    return result;
+}
+
+
+public boolean isEmpty() {
+	return cancelRides.isEmpty();
+}
+public int getSize() {
+	return cancelRides.size();
+}
+}

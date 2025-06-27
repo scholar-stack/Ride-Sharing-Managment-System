@@ -1,0 +1,166 @@
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+
+public class RideRequest {
+private Customer customer;
+private LocalDateTime requestTime;
+private double price;
+private Location pickUpLocation;
+private Location destination;
+private Status status;
+enum Status{ASSIGNED,PENDING,COMPLETE,CANCELED}
+private Driver assignedDriver;
+
+public RideRequest(Customer customer, LocalDateTime requestTime,double price, Location pickUpLocation,
+		Location destination,Status status) {
+	this.customer=customer;
+	this.requestTime=requestTime;
+	this.price=price;
+	this.pickUpLocation=pickUpLocation;
+	this.destination=destination;
+	this.status=status;
+	this.assignedDriver=assignedDriver;
+}
+
+public Customer getCustomer() {
+	return customer;
+}
+
+public void setCustomer(Customer customer) {
+	this.customer = customer;
+}
+
+public LocalDateTime getRequestTime() {
+	return requestTime;
+}
+
+public void setRequestTime(LocalDateTime requestTime) {
+	this.requestTime = requestTime;
+}
+
+public double getPrice() {
+	return price;
+}
+
+public void setPrice(double price) {
+	this.price = price;
+}
+
+public Location getPickUpLocation() {
+	return pickUpLocation;
+}
+
+public void setPickUpLocation(Location pickUpLocation) {
+	this.pickUpLocation = pickUpLocation;
+}
+
+public Location getDestination() {
+	return destination;
+}
+
+public void setDestination(Location destination) {
+	this.destination = destination;
+}
+
+public Status getStatus() {
+	return status;
+}
+
+public void setStatus(Status status) {
+	this.status = status;
+}
+
+public Driver getAssignedDriver() {
+	return assignedDriver;
+}
+
+public void setAssignedDriver(Driver assignedDriver) {
+	this.assignedDriver = assignedDriver;
+}
+public void assignDriver(Driver driver) {
+	this.assignedDriver=driver;
+	this.status=status.ASSIGNED;
+	driver.setAvailable(false);//nese driver nuk eshte available
+}
+
+public String toString() {
+	return "The ride request details are:" + customer + status + requestTime + pickUpLocation
+			+ destination + price + assignedDriver;
+}
+public String toCSV() {
+
+    return customer.getName() + "," + customer.getID() + "," +
+           pickUpLocation.getLongitude() + "," + pickUpLocation.getLatitude() + "," +
+           destination.getLongitude() + "," + destination.getLatitude() + "," +
+           price + "," + requestTime + "," + status + "," +
+           (assignedDriver != null ? assignedDriver.getID() : "");  
+}
+
+public void saveRequestsToCSV() {
+    try (FileWriter writer = new FileWriter("ride_requests.csv", true)) {  
+        writer.write(toCSV() + "\n");
+    } catch (IOException e) {
+        System.out.println("Error saving request to CSV: " + e.getMessage());
+    }
+}
+
+
+public static RideRequest fromCSV(String csvLine, StoreDrivers storeDrivers) {
+   
+    String[] parts = csvLine.split(",");
+
+    for (int i = 0; i < parts.length; i++) {
+        parts[i] = parts[i].trim();  
+    }
+
+
+    System.out.println("Parts: " + Arrays.toString(parts));
+    
+    
+    if (parts.length != 10) {  
+        System.out.println(csvLine);
+        return null;  
+    }
+
+    try {
+      
+        String customerName = parts[0];
+        String customerId = parts[1];
+        Customer customer = new Customer(customerName, customerId, new Location(Double.parseDouble(parts[4]), Double.parseDouble(parts[5])), new Location(Double.parseDouble(parts[6]), Double.parseDouble(parts[7])));
+        
+      
+        System.out.println("Request time: " + parts[2]);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime requestTime = LocalDateTime.parse(parts[2], formatter);
+
+
+        double price = Double.parseDouble(parts[3]);
+        Location pickUpLocation = new Location(Double.parseDouble(parts[4]), Double.parseDouble(parts[5]));
+        Location destination = new Location(Double.parseDouble(parts[6]), Double.parseDouble(parts[7]));
+        Status status = Status.valueOf(parts[8].toUpperCase());  
+        String assignedDriverId = parts[9]; 
+
+       
+        Driver assignedDriver = storeDrivers.findDriverByID(assignedDriverId); 
+
+       
+        if (parts[4].isEmpty() || parts[5].isEmpty() || parts[6].isEmpty() || parts[7].isEmpty()) {
+            System.out.println("Missing location values in CSV line: " + csvLine);
+            return null;
+        }
+
+        RideRequest request = new RideRequest(customer, requestTime, price, pickUpLocation, destination, status);
+        if (assignedDriver != null) {
+            request.assignDriver(assignedDriver);  
+        }
+        return request;
+    } catch (Exception e) {
+        System.out.println("Error parsing CSV line: " + csvLine + " - " + e.getMessage());
+        return null;  
+    }
+}
+
+}

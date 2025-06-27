@@ -1,0 +1,344 @@
+import java.io.*;
+import java.time.LocalDateTime;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+public class Main {
+public static void main(String args[]) {
+  	StoreDrivers storeDrivers=new StoreDrivers();
+  	RideQueue rideQueue = new RideQueue();
+  	RideStack cancelRides=new RideStack();
+
+  
+	Scanner scanner=new Scanner(System.in);
+	int choice;
+	do {
+		System.out.println("\n---------RIDE SHARING SYSTEM---------  ");
+		System.out.println("Choose an option");
+		System.out.println("Press 1:Show all the drivers of the system.");
+		System.out.println("Press 2:Show all the customers of the system.");
+		System.out.println("Press 3:Show the details of the ride requests.");
+		System.out.println("Press 4: To sort the drivers by their rating.");
+		System.out.println("Press 5: To find the closest driver.");
+		System.out.println("Press 6: To add drivers to the system.");
+		System.out.println("Press 7: To remove drivers.");
+		System.out.println("Press 8: To calculate the distance between two locations.");
+        System.out.println("Press 9: To add a request.");
+        System.out.println("Press 10: To cancel a request.");
+        System.out.println("Press 11: To display pending requests.");
+        System.out.println("Press 12: Add a canceling request.");
+        System.out.println("Press 13: To find the average driver rating.");
+        System.out.println("Press 14: To remove a canceling request.");
+        System.out.println("Press 0: Exit.");
+        System.out.println("Enter your choice:");
+        choice=scanner.nextInt();
+        switch(choice) {
+        case 1->{
+        	 storeDrivers.loadDriversFromCSV("drivers.csv");
+        	 storeDrivers.display();
+        	 break;
+        }
+        case 2->{
+       Customer.loadCustomersFromCSV("customers.csv");
+       break;
+        }
+        case 3->{
+
+            rideQueue.loadRequestsFromCSV("ride_requests.csv", storeDrivers);
+
+        	    }
+
+        case 4->{
+       	 storeDrivers.sortDriverByRating();
+       }  
+        case 5->{
+        	System.out.println(" Drivers before searching...");
+        	storeDrivers.display(); // Check if any drivers exist
+
+            System.out.print("Enter latitude: ");
+            double latitude = scanner.nextDouble();
+            System.out.print("Enter longitude: ");
+            double longitude = scanner.nextDouble();
+
+            
+            Location pickUpLocation = new Location(latitude, longitude);
+
+          
+            Driver nearestDriver = storeDrivers.searchDriverByLocation(pickUpLocation);
+
+
+            if (nearestDriver != null) {
+                System.out.println("The closest driver is: ");
+                System.out.println("Name: " + nearestDriver.getName());
+                System.out.println("ID: " + nearestDriver.getID());
+                System.out.println("Location: (" + nearestDriver.getCurrentLocation().getLatitude() + ", " + nearestDriver.getCurrentLocation().getLongitude() + ")");
+                System.out.println("Rating: " + nearestDriver.getRating());
+            } else {
+                System.out.println("No driver found.");
+            }
+            
+            break;
+        }
+        
+        case 6->{
+        	
+        	System.out.println("Enter name:");
+        	String name = scanner.nextLine().trim();
+while (name.isEmpty()) { 
+    name = scanner.nextLine().trim();
+}
+        	System.out.println("Enter ID:");
+        	String ID = scanner.nextLine().trim(); 
+        	while (ID.isEmpty()) {  
+        	    System.out.println("Invalid input! Enter a valid ID:");
+        	    ID = scanner.nextLine().trim();
+        	}
+
+        	System.out.println("Enter rating:");
+        	while (!scanner.hasNextDouble()) {  // Ensure input is a valid double
+        	    System.out.println("Invalid input! Enter a valid rating:");
+        	    scanner.next();
+        	}
+        	double rating = scanner.nextDouble();
+
+        	
+        	scanner.nextLine();  
+
+        	System.out.println("Is the driver available? (true/false):");
+        	while (!scanner.hasNextBoolean()) {  // Ensure input is a valid boolean
+        	    System.out.println("Invalid input! Enter true or false:");
+        	    scanner.next();
+        	}
+        	boolean isAvailable = scanner.nextBoolean();
+
+  
+        	scanner.nextLine();  
+
+        	System.out.println("Enter current location (longitude latitude):");
+        	while (!scanner.hasNextDouble()) {  
+        	    System.out.println("Invalid input! Enter a valid longitude:");
+        	    scanner.next();
+        	}
+        	double longitude = scanner.nextDouble();
+
+        	while (!scanner.hasNextDouble()) {  
+        	    System.out.println("Invalid input! Enter a valid latitude:");
+        	    scanner.next();
+        	}
+        	double latitude = scanner.nextDouble();
+
+        
+        	scanner.nextLine();  
+        	System.out.println("Name: " + name);
+        	System.out.println("ID: " + ID);
+        	System.out.println("Rating: " + rating);
+        	System.out.println("Available: " + isAvailable);
+        	System.out.println("Location: (" + latitude + ", " + longitude + ")");
+
+        	// Creating and adding the driver
+        	Location currentLocation = new Location(latitude, longitude);
+        	Driver newDriver = new Driver(name, ID, rating, isAvailable, currentLocation);
+        	storeDrivers.addDriver(newDriver);
+
+        	System.out.println("Driver has been added successfully!");
+        	
+        }
+        case 7->{
+        	
+        	System.out.println("Enter ID to remove a driver:");
+        	scanner.nextLine(); 
+        	String removedId = scanner.nextLine().trim();
+ 
+        	storeDrivers.display(); 
+
+        	Driver removeDriver = storeDrivers.findDriverByID(removedId);
+        	if (removeDriver == null) {
+        	    System.out.println("Driver with ID " + removedId + " not found.");
+        	} else {
+        	    System.out.println("Found driver: " + removeDriver.getName());
+    
+        	}
+        
+        }
+        
+        case 8 -> {
+            System.out.println("Enter driver's ID:");
+            scanner.nextLine();  // Consume newline left over
+            String driverId = scanner.nextLine().trim();  
+
+            Driver selectedDriver = storeDrivers.findDriverByID(driverId);
+
+            if (selectedDriver == null) {
+                System.out.println("Driver with ID " + driverId + " not found.");
+                break;
+            }
+
+            if (selectedDriver.getCurrentLocation() == null) {
+                System.out.println("Error: This driver does not have a valid location.");
+                break;
+            }
+
+            double pickUpLatitude = 0;
+            double pickUpLongitude = 0;
+
+            boolean validInput = false;
+
+            while (!validInput) {
+                try {
+                    System.out.println("Enter customer's pick-up location (latitude and longitude):");
+                    pickUpLatitude = scanner.nextDouble();  
+                    pickUpLongitude = scanner.nextDouble(); 
+                    scanner.nextLine(); 
+
+                    validInput = true;  
+
+                } catch (InputMismatchException e) {
+                    System.out.println("Invalid input! Please enter valid numeric values for latitude and longitude.");
+                    scanner.nextLine();                 }
+            }
+
+            Location pickUpLocation = new Location(pickUpLatitude, pickUpLongitude);
+
+            double distance = selectedDriver.calculateDistance(pickUpLocation);
+
+            System.out.printf("Distance between driver and customer: %.2f km.\n", distance);
+        }
+
+
+        case 9->{
+       
+            System.out.println("Enter customer's name:");
+            scanner.nextLine();
+            String name = scanner.nextLine();
+
+            System.out.println("Enter customer's ID:");
+            String ID = scanner.nextLine();
+
+            System.out.println("Enter pick-up location (latitude and longitude):");
+            double pickUpLatitude = scanner.nextDouble();
+            double pickUpLongitude = scanner.nextDouble();
+            Location pickUpLocation = new Location(pickUpLatitude, pickUpLongitude);
+
+            System.out.println("Enter destination location (latitude and longitude):");
+            double destLatitude = scanner.nextDouble();
+            double destLongitude = scanner.nextDouble();
+            Location destination = new Location(destLatitude, destLongitude);
+
+            System.out.println("Enter ride price:");
+            double price = scanner.nextDouble();
+
+            LocalDateTime requestTime = LocalDateTime.now();
+
+            Customer customer = new Customer(name, ID, pickUpLocation, destination);
+            RideRequest rideRequest = new RideRequest(customer, requestTime, price, pickUpLocation, destination, RideRequest.Status.PENDING);
+
+            rideQueue.addRequest(rideRequest);
+            
+
+            break;
+        }
+        case 10->{
+
+            System.out.println("Enter the customer's name to remove their ride request:");
+            scanner.nextLine(); 
+            String customerName = scanner.nextLine().trim();
+
+            RideRequest requestToRemove = null;
+
+            // Find the RideRequest for the given customer name
+            for (RideRequest request : rideQueue.getRequests()) {
+                if (request.getCustomer().getName().equalsIgnoreCase(customerName)) {
+                    requestToRemove = request;
+                    break;
+                }
+            }
+
+            if (requestToRemove == null) {
+                System.out.println("No ride request found for customer: " + customerName);
+            } else {
+                // Now, you can directly call cancelRequest with the RideRequest object
+                if (rideQueue.cancelRequest(requestToRemove)) {
+                    System.out.println("Ride request for " + customerName + " has been removed.");
+                } else {
+                    System.out.println("Failed to remove the ride request for " + customerName);
+                }
+            }
+            break;
+        }
+
+        
+
+
+        case 11->{
+  
+            System.out.println("Displaying all pending ride requests:");
+            rideQueue.displayPendingRequests();
+            break;
+        }
+        case 12-> {
+            System.out.println("Enter the customer name whose ride request you want to cancel:");
+            scanner.nextLine();  
+            String customerName = scanner.nextLine().trim();  
+
+            RideRequest requestToCancel = null;
+            
+            // Search for the ride request by customer name
+            for (RideRequest request : rideQueue.getRequests()) {
+                if (request.getCustomer().getName().equalsIgnoreCase(customerName)) {
+                    requestToCancel = request;
+                    break;
+                }
+            }
+
+            if (requestToCancel == null) {
+                System.out.println("No ride request found for customer: " + customerName);
+            } else {
+        
+                boolean canceled = rideQueue.cancelRequest(requestToCancel);
+
+                if (canceled) {
+                   
+                    cancelRides.addCanceledRequests(requestToCancel);                      System.out.println("Ride request for " + customerName + " has been canceled and added to the stack.");
+                } else {
+                    System.out.println("Failed to cancel the ride request.");
+                }
+            }
+            break;
+        }
+        case 13->{
+            System.out.println("Computing the average driver rating from canceled rides...");
+            double avgRating = cancelRides.computeAverageRating();
+            if (avgRating == 0.0) {
+                System.out.println("No valid ratings available for computation.");
+            } else {
+                System.out.println("The average driver rating from canceled rides is: " + avgRating);
+            }
+            break;
+
+        }
+        case 14-> {
+            RideRequest restoredRequest = cancelRides.removeCanceledRequests();
+
+            if (restoredRequest != null) {
+                rideQueue.addRequest(restoredRequest);  
+                System.out.println("Ride request successfully restored and added back to the queue.");
+            } else {
+                System.out.println("No canceled requests to restore.");
+            }
+            break;
+        }
+
+        case 0->
+        System.out.println("Exiting");
+        default->System.out.println("Invalid choice");
+        }
+        System.out.println();
+	}while(choice!=0);
+	scanner.close();
+		
+	
+
+}
+
+
+}

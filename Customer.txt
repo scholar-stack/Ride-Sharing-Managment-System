@@ -1,0 +1,137 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Customer {
+private String name;
+private String ID;
+private static Location currentLocation;
+private Location destination;
+
+
+public Customer(String name, String ID, Location currentLocation, Location destination) {
+this.name=name;
+this.ID=ID;
+this.currentLocation=currentLocation;
+this.destination=destination;
+}
+public Customer() {
+	
+}
+
+public String getName() {
+	return name;
+}
+public void setName(String name) {
+	this.name = name;
+}
+public String getID() {
+	return ID;
+}
+
+public void setID(String iD) {
+	ID = iD;
+}
+
+public Location getCurrentLocation() {
+	return currentLocation;
+}
+
+public void setCurrentLocation(Location location) {
+    System.out.println("Setting location for driver: " + this.name + " to " + location);
+    this.currentLocation = location;
+}
+
+
+
+public Location getDestination() {
+	return destination;
+}
+
+
+public void setDestination(Location destination) {
+	this.destination = destination;
+}
+
+
+
+public void printDetails() {
+	System.out.println("Name: "+ name);
+	System.out.println("ID "+ ID);
+	System.out.println("The current location is:" +currentLocation);
+	System.out.println("The destiantion is:"+destination);
+}
+public String toString() {
+	return "The customer named:" + name+"with ID "+ID+"has the current loaction:"+currentLocation +
+			"has a destination to:"+destination;
+}
+public String toCSV() {
+	return name + "" + ID + "" + currentLocation + "" + destination;
+}
+public void saveCustomersToCSV() {
+	try(FileWriter writer=new FileWriter("customers.csv",true)){
+		writer.write(toCSV()+"/n");
+	}catch(IOException e){
+		System.out.println("Error saving customers to csv"+e.getMessage());
+	}
+}
+public static Customer fromCSV(String csvLine) {
+	System.out.println(csvLine);
+	if (csvLine.trim().isEmpty()) {
+        System.out.println("Skipping empty line");
+        return null;
+    }
+	 
+
+	try {
+	String[] parts=csvLine.split(",");
+	 for (String part : parts) {
+	        System.out.println(part);
+	    }
+
+	if(parts.length!=6) {
+		System.out.println("Invalid data:"+csvLine);
+		return null;
+	}
+	String name=parts[0].trim();
+	String ID=parts[1].trim();
+	String[] currentLocations=parts[2].trim().replace("(", "").replace(")", "").split("\\s+");;
+	if(currentLocations.length==2) {
+	double currentLong=Double.parseDouble(currentLocations[0].trim());
+	double currentLat=Double.parseDouble(currentLocations[1].trim());
+	Location currentLocation= new Location(currentLong,currentLat);
+	}
+	
+String[] destinationLocation=parts[3].trim().replace("(", "").replace(")", "").split("\\s+");
+if(destinationLocation.length==2) {
+	double destinationLong=Double.parseDouble(parts[0]);
+	double destinationLat=Double.parseDouble(parts[1]);
+	Location destination= new Location(destinationLong,destinationLat);
+	return new Customer(name , ID , currentLocation , destination);
+}
+
+}catch(Exception e) {
+	System.out.println("Error loading customers from csv"+e.getMessage());
+	
+}
+	return null;
+}
+public static List<Customer> loadCustomersFromCSV(String filename) {
+    List<Customer> customers = new ArrayList<>();
+    try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            Customer customer = fromCSV(line);
+            if (customer != null) {
+                customers.add(customer);
+            }
+        }
+    } catch (IOException e) {
+        System.out.println("Error reading customers from CSV: " + e.getMessage());
+    }
+    return customers;
+}
+}

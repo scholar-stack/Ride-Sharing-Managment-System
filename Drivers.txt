@@ -1,0 +1,134 @@
+public class Driver {
+public String name;
+private double rating;
+private String ID;
+private boolean isAvailable;
+private static Location currentLocation;
+
+public Driver(String name, String ID,double rating, boolean isAvailable,Location currentLocation) {
+this.name=name;
+this.ID=ID;
+this.rating=rating;
+this.isAvailable=isAvailable;
+this.currentLocation=currentLocation;
+
+}
+public Driver() {
+	
+}
+public String getName() {
+	return name;
+}
+
+public void setName(String name) {
+	this.name = name;
+}
+
+public double getRating() {
+	return rating;
+}
+
+public void setRating(double rating) {
+	this.rating = rating;
+}
+
+public String getID() {
+	return ID;
+}
+public void setID(String iD) {
+	ID = iD;
+}
+
+public Location getCurrentLocation() {
+	return currentLocation;
+}
+
+public void setCurrentLocation(Location currentLocation) {
+	this.currentLocation = currentLocation;
+}
+
+public boolean isAvailable() {
+	return isAvailable;
+}
+
+public void setAvailable(boolean isAvailable) {
+	this.isAvailable = isAvailable;
+}
+
+public double calculateDistance(Location pickUpLocation) {
+    if (this.currentLocation == null || pickUpLocation == null) {
+        System.out.println("ERROR: Null location detected.");
+        return Double.MAX_VALUE; 
+    }
+    
+    double dx = this.currentLocation.getLongitude() - pickUpLocation.getLongitude();
+    double dy = this.currentLocation.getLatitude() - pickUpLocation.getLatitude();
+    
+    double distance = Math.sqrt(dx * dx + dy * dy);
+    return distance;
+}
+
+public String toString() {
+	return  name + ID + rating + isAvailable + currentLocation;
+}
+
+public String toCSV() {
+    return name + "," + ID + "," + rating + "," + isAvailable + "," + currentLocation.getLatitude() + "," + currentLocation.getLongitude();
+}
+
+
+public static Driver fromCSV(String line) {
+    if (line.trim().isEmpty()) {
+        return null; 
+    }
+
+  
+    line = line.replaceAll("^\"|\"$", "").trim();
+
+ 
+    int startIdx = line.indexOf("(");
+    int endIdx = line.indexOf(")");
+
+    if (startIdx == -1 || endIdx == -1 || startIdx >= endIdx) {
+        return null; 
+    }
+
+    
+    String locationString = line.substring(startIdx + 1, endIdx).trim();
+    String[] coordinates = locationString.split(",");
+
+    if (coordinates.length != 2) {
+        return null; 
+    }
+
+    try {
+        String[] otherParts = line.substring(0, startIdx).split(",");
+        if (otherParts.length < 4) {
+            return null; 
+        }
+
+        String name = otherParts[0].trim();  
+        String ID = otherParts[1].trim();    
+        double rating = Double.parseDouble(otherParts[2].trim());  
+        boolean isAvailable = Boolean.parseBoolean(otherParts[3].trim());  
+
+        double latitude = Double.parseDouble(coordinates[0].trim());
+        double longitude = Double.parseDouble(coordinates[1].trim());
+
+        Location location = new Location(latitude, longitude);
+
+        
+        Driver newDriver = new Driver(name, ID, rating, isAvailable, location);
+        System.out.println("Driver added: " + newDriver); 
+
+        return newDriver;
+
+    } catch (Exception e) {
+     
+        return null;
+    }
+}
+
+}
+
+

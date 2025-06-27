@@ -1,0 +1,248 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+
+public class StoreDrivers  {
+private Node  head;
+private int size;
+
+public StoreDrivers() {
+	head=null;
+	size=0;
+}
+public class Node{
+	Driver data;
+	Node  next;
+	
+	public Node(Driver data) {
+		this.data=data;
+		this.next=null;
+	}
+}
+public void display() {
+    if (head == null) {
+        System.out.println("No drivers available.");
+        return;
+    }
+
+    Node current = head;
+    while (current != null) {
+        Driver driver = current.data;
+        Location location = driver.getCurrentLocation();
+        System.out.println("Name: " + driver.getName());
+        System.out.println("ID: " + driver.getID());
+        System.out.println("Rating: " + driver.getRating());
+        System.out.println("Available: " + driver.isAvailable());
+        System.out.println("Location: (" + location.getLatitude() + ", " + location.getLongitude() + ")");
+        System.out.println("----------------------");
+        current = current.next;
+    }
+    System.out.println("Total drivers: " + size);
+}
+public void addDriver(Driver driver) {
+    if (driver == null) return;
+
+    // Check if driver already exists
+    Node current = head;
+    while (current != null) {
+        if (current.data.getID().equals(driver.getID())) {
+            System.out.println(" Driver with ID " + driver.getID() + " already exists. Skipping.");
+            return; // Prevent duplicate entry
+        }
+        current = current.next;
+    }
+
+    // Add new driver at the front of the list
+    Node newNode = new Node(driver);
+    newNode.next = head;
+    head = newNode;
+    size++;
+    System.out.println(" Driver added: " + driver.getName() + " | New size: " + size);
+}
+
+	public boolean removeDriver(Driver driver,StoreDrivers storeDrivers) {//heq nje driver dhe te dhenat e tij
+		if(head==null)return false;
+		if(head.data.equals(driver)) {
+			head=head.next;
+			size--;
+			loadDriversFromCSV("drivers.csv");
+			return true;
+		}
+		
+	Node current=head;
+	while (current.next != null) {
+        if (current.next.data.equals(driver)) {
+		current.next=current.next.next;
+		size--;
+		loadDriversFromCSV("drivers.csv");
+		return true;
+	}
+        current=current.next;
+	}
+	return false;
+	}
+	
+	public Driver findDriverByID(String ID) {
+	    System.out.println("Search for ID: " + ID);
+	    Node current = head;
+	    while (current != null) {
+	        System.out.println("Checking ID: " + current.data.getID()); 
+	        if (current.data.getID().trim().equalsIgnoreCase(ID.trim())) { 
+	            return current.data;
+	        }
+	        current = current.next;
+	    }
+	    return null;
+	}
+
+	public void sortDriverByRating() {
+		display();
+	    if (head == null) {
+	        System.out.println("No drivers to sort.");
+	        return;
+	    }
+
+	    head = SortDrivers(head); 
+
+	    System.out.println("Sorting complete. Sorted drivers:");
+	    display(); 
+	}
+
+	public Node SortDrivers(Node head) {
+	    if (head == null || head.next == null) {
+	        return head;
+	    }
+	    Node middle = getMiddle(head);
+	    Node nextOfMiddle = middle.next;
+	    middle.next = null;
+	    Node left = SortDrivers(head);
+	    Node right = SortDrivers(nextOfMiddle);
+	    
+	    return Sort(left, right);
+	}
+
+	public Node Sort(Node left, Node right) {
+	    if (left == null) return right;
+	    if (right == null) return left;
+	    
+	    Node result;
+	    if (left.data.getRating() >= right.data.getRating()) {
+	        result = left;
+	        result.next = Sort(left.next, right);
+	    } else {
+	        result = right;
+	        result.next = Sort(left, right.next);
+	    }
+	    return result;
+	}
+
+	private Node getMiddle(Node head) {
+	    if (head == null) return head;
+	    Node left = head, right = head.next;
+	    
+	    while (right != null && right.next != null) {
+	        left = left.next;
+	        right = right.next.next;
+	    }
+	    return left;
+	}
+
+	public Driver[] toArray() {
+	    System.out.println("Current list size: " + size);
+
+	    if (size == 0) {
+	        System.out.println("No drivers in the list!");
+	        return new Driver[0]; 
+	    }
+
+	    Driver[] array = new Driver[size];
+	    Node current = head;
+	    int index = 0;
+
+	    while (current != null) {
+	        array[index++] = current.data;
+	        current = current.next;
+	    }
+
+	    System.out.println("Successfully converted to array. Array size: " + array.length);
+	    return array;
+	}
+
+
+	
+	public Driver searchDriverByLocation(Location pickUpLocation) {
+	
+	    Driver[] driverArray = toArray();
+	    if (driverArray.length == 0) {
+	        System.out.println("No drivers available.");
+	        return null;
+	    }
+
+	    Arrays.sort(driverArray, Comparator.comparingDouble(d -> d.calculateDistance(pickUpLocation)));
+
+	   
+	    for (Driver driver : driverArray) {
+	        double distance = driver.calculateDistance(pickUpLocation);
+	        System.out.println(driver.getID() + " - Distance: " + distance);
+	    }
+
+	
+	    double[] distances = new double[driverArray.length];
+	    for (int i = 0; i < driverArray.length; i++) {
+	        distances[i] = Math.round(driverArray[i].calculateDistance(pickUpLocation) * 10.0) / 10.0; // Round to 1 decimal
+	    }
+
+	    double targetDistance = distances[0];  
+	    int index = Arrays.binarySearch(distances, targetDistance);
+
+	    if (index >= 0) {
+	        return driverArray[index];  
+	    } else {
+	        return driverArray[0];  
+	    }
+	}
+
+	public void saveDriversToCSV(String filename) {
+	    try (FileWriter writer = new FileWriter(filename)) { // Overwrite file
+	        Node current = head;
+	        while (current != null) {
+	            writer.write(current.data.toCSV() + "\n");
+	            current = current.next;
+	        }
+	        System.out.println("Drivers saved successfully to " + filename);
+	    } catch (IOException e) {
+	        System.out.println("Error saving drivers to CSV: " + e.getMessage());
+	    }
+	}
+
+	   
+
+	public void loadDriversFromCSV(String filename) {
+	    System.out.println("Loading drivers from " + filename + "...");
+
+	    head = null;
+	    size = 0;
+
+	    try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+	        String line;
+	        while ((line = reader.readLine()) != null) {
+	            Driver driver = Driver.fromCSV(line);
+	            if (driver != null) {
+	                addDriver(driver);
+	                System.out.println("Driver added from CSV: " + driver.getName() + " | Current size: " + size);
+	                System.out.println(line);
+	            } else {
+	                System.out.println(" Skipping invalid driver entry: " + line);
+	            }
+	        }
+	        System.out.println("Drivers loaded successfully! Total: " + size);
+	    } catch (IOException e) {
+	        System.out.println("Error loading drivers: " + e.getMessage());
+	    }
+	   
+	}
+
+}
